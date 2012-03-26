@@ -1,5 +1,5 @@
 require "dp_utils/version"
 
 module DpUtils
-  # Your code goes here...
+  require File.expand_path("../dp_utils/railtie", __FILE__) if defined?(Rails)
 end

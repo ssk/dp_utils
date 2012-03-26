@@ -1,3 +1,3 @@
 module DpUtils
-  VERSION = "0.0.1"
+  VERSION = "0.0.3" unless const_defined?(:VERSION)
 end
