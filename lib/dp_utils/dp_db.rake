@@ -53,6 +53,21 @@ namespace :dp do
       puts "-" * 80
     end
 
+    namespace :sessions do 
+      desc "Clear sessions table fast"
+      task :clear => :environment do 
+        sqls = <<-END 
+          create table sessions_temp like sessions 
+          drop table sessions 
+          rename table sessions_temp to sessions 
+        END
+        sqls.each_line do |line|
+          puts line.strip
+          ActiveRecord::Base.connection.execute(line.strip)
+        end
+      end
+    end
+
   end
 
 end
