@@ -44,7 +44,7 @@ namespace :dp do
   end
 
   desc "Backup remote and download the file and restore."
-  task :remote_restore => :download_backup do 
+  task :download_and_restore => :download_backup do 
     db_config = ActiveRecord::Base.configurations['development']   
 
     puts "Restoring..."
