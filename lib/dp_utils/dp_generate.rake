@@ -73,6 +73,7 @@ namespace :dp do
   end
 END
     end
+
 =begin
     desc "Generate bootstrap view files in erb format."
     task :bootstrap_haml => :setup do 
