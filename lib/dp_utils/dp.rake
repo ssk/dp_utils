@@ -76,7 +76,7 @@ namespace :dp do
     `heroku pgbackups:restore DATABASE "http://share.samanne.com/pg/#{File.basename(ENV["path"])}"`
 
     puts "Deleting file..."
-    `ssh share33@share.samanne.com "rm -f files/pg/#{File.basename(ENV["path"])}"
+    `ssh share33@share.samanne.com "rm -f files/pg/#{File.basename(ENV["path"])}"`
   end
 
 end
