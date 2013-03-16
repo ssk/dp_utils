@@ -66,4 +66,21 @@ namespace :dp do
     puts "Created #{ENV["path"].strip}.sql"
   end
 
+  task :upload_and_restore do
+    if ENV["path"].blank?
+      puts "Provide path= option"
+      exit
+    end
+
+    puts "Uploading file..."
+    puts "Password: share1111"
+    `scp "#{ENV["path"]}" share33@share.samanne.com:files/pg/`
+
+    puts "Restoring DB..."
+    `heroku pgbackups:restore DATABASE "http://share.samanne.com/pg/#{File.basename(ENV["path"])}"`
+
+    puts "Deleting file..."
+    `ssh share33@share.samanne.com "rm -f files/pg/#{File.basename(ENV["path"])}"`
+  end
+
 end
