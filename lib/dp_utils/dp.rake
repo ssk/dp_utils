@@ -28,7 +28,8 @@ namespace :dp do
     end
     db_config = ActiveRecord::Base.configurations[Rails.env]   
     if ENV["path"] =~ /production/
-      sh "psql --set ON_ERROR_STOP=on --no-owner --single-transaction -U #{db_config['username'].to_s} -w -h localhost #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}"
+      #sh "psql --set ON_ERROR_STOP=on --no-owner --single-transaction -U #{db_config['username'].to_s} -w -h localhost #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}"
+      `pg_restore --verbose --clean --no-acl --no-owner -U #{db_config['username'].to_s} -w -h localhost -d #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}`
     else
       sh "psql --set ON_ERROR_STOP=on --single-transaction -U #{db_config['username'].to_s} -w -h localhost #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}"
     end
