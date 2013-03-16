@@ -27,7 +27,11 @@ namespace :dp do
       exit
     end
     db_config = ActiveRecord::Base.configurations[Rails.env]   
-    sh "psql --set ON_ERROR_STOP=on --single-transaction -U #{db_config['username'].to_s} -w -h localhost #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}"
+    if ENV["path"] =~ /production/
+      sh "psql --set ON_ERROR_STOP=on --no-owner --single-transaction -U #{db_config['username'].to_s} -w -h localhost #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}"
+    else
+      sh "psql --set ON_ERROR_STOP=on --single-transaction -U #{db_config['username'].to_s} -w -h localhost #{db_config['database']} < #{File.join(Rails.root, ENV["path"])}"
+    end
   end
 
 
