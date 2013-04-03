@@ -1,5 +1,15 @@
 namespace :dp do 
 
+  task :help do 
+    puts "dp:local_backup"
+    puts "dp:local_restore path="
+    puts "dp:download_backup"
+    puts "dp:download_and_restore"
+    puts "dp:uncompress_backup path="
+    puts "dp:upload_backup path="
+    puts "dp:delete_backup path="
+  end
+
   task :setup => :environment do 
     def get_appname
       line = `heroku apps:info | grep git@heroku.com`
