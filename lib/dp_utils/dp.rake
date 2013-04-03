@@ -87,8 +87,9 @@ namespace :dp do
     puts "Password: share1111"
     `scp "#{ENV["path"]}" share33@share.samanne.com:files/pg/`
 
+    puts "Make sure you did 'heroku addons:add pgbackups'"
     puts "Run the command and delete it after that (rake dp:delete_backup path=#{ENV["path"]}"
-    puts 'heroku pgbackups:restore DATABASE "http://share.samanne.com/pg/#{File.basename(ENV["path"])}"'
+    puts "heroku pgbackups:restore DATABASE \"http://share.samanne.com/pg/#{File.basename(ENV["path"])}\""
 
   end
 
