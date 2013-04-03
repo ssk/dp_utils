@@ -67,7 +67,7 @@ namespace :dp do
     puts "Created #{ENV["path"].strip}.sql"
   end
 
-  task :upload_and_restore do
+  task :upload_backup do
     if ENV["path"].blank?
       puts "Provide path= option"
       exit
@@ -77,11 +77,19 @@ namespace :dp do
     puts "Password: share1111"
     `scp "#{ENV["path"]}" share33@share.samanne.com:files/pg/`
 
-    puts "Restoring DB..."
-    `heroku pgbackups:restore DATABASE "http://share.samanne.com/pg/#{File.basename(ENV["path"])}"`
+    puts "Run the command and delete it after that (rake dp:delete_backup path=#{ENV["path"]}"
+    puts 'heroku pgbackups:restore DATABASE "http://share.samanne.com/pg/#{File.basename(ENV["path"])}"'
 
+  end
+
+  task :delete_backup do 
+    if ENV["path"].blank?
+      puts "Provide path= option"
+      exit
+    end
     puts "Deleting file..."
     `ssh share33@share.samanne.com "rm -f files/pg/#{File.basename(ENV["path"])}"`
   end
+
 
 end
