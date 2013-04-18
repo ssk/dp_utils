@@ -8,6 +8,8 @@ namespace :dp do
     puts "dp:uncompress_backup path="
     puts "dp:upload_backup path="
     puts "dp:delete_backup path="
+    puts "dp:pg_dump_data_only"
+    puts "dp:convert_for_sqlite3 path="
   end
 
   task :setup => :environment do 
@@ -102,5 +104,34 @@ namespace :dp do
     `ssh share33@share.samanne.com "rm -f files/pg/#{File.basename(ENV["path"])}"`
   end
 
+  task :pg_dump_data_only => :environment do 
+    datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
+    backup_file = File.join(Rails.root, "db", "#{Rails.env}_#{datestamp}_data_only.sql")    
+    db_config = ActiveRecord::Base.configurations[Rails.env]   
+    sh "pg_dump --data-only --inserts -U #{db_config['username'].to_s} -w -h localhost -E UTF8 #{db_config['database']} > #{backup_file}"     
+    puts "CREATED: db/#{Rails.env}_#{datestamp}_data_only.sql"
+  end
+
+  task :convert_for_sqlite3 do 
+    if ENV["path"].blank?
+      puts "Provide path= option"
+      exit
+    end
+    datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
+    File.open("db/sqlite_#{datestamp}.sql", "w") do |f|
+      f << "BEGIN;" << "\n"
+      File.readlines(ENV['path']).each do |line|
+        f << line.gsub("'t'", "true").gsub("'f'", "false") unless line =~ /SET/ or line =~ /SELECT pg_catalog.setval/
+      end    
+      f << "END;"
+    end
+    puts "CREATED: db/sqlite_#{datestamp}.sql"
+    puts "Now import data into sqlite3."
+    puts "rake db:migrate"
+    puts "sqlite3 db/development.sqlite3"
+    puts "sqlite> delete from schema_migrations;"
+    puts "sqlite> .read db/sqlite_#{datestamp}.sql"
+    puts "sqlite> .quit"
+  end
 
 end
