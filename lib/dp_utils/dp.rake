@@ -11,6 +11,7 @@ namespace :dp do
     puts "dp:pg_dump_data_only"
     puts "dp:convert_for_sqlite3 path="
     puts "dp:kill_pg_connections"
+    puts "dp:add_encoding"
   end
 
   task :setup => :environment do 
