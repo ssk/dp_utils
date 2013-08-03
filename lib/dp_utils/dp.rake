@@ -16,7 +16,10 @@ namespace :dp do
 
   task :setup => :environment do 
     def get_appname
-      line = `heroku apps:info | grep git@heroku.com`
+      line = 
+      Bundler.with_clean_env {
+        line = `heroku apps:info | grep git@heroku.com`
+      }
       line.split(":").last.strip.sub(".git", "")
     end
   end
@@ -52,14 +55,16 @@ namespace :dp do
 
   desc "Backup Heroku DB and download. heroku addons:add pgbackups first."
   task :download_backup => :setup do 
-    puts "Capturing..."
-    `heroku pgbackups:capture --expire`
-    url = `heroku pgbackups:url`
-    puts "URL: #{url}"
-    datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
-    $backup_file = File.join(Rails.root, "db", "production_#{datestamp}.dump")   
-    puts "Downloading into db/#{File.basename($backup_file)}"
-    `curl -o #{$backup_file} "#{url}"`
+    Bundler.with_clean_env {
+      puts "Capturing..."
+      `heroku pgbackups:capture --expire`
+      url = `heroku pgbackups:url`
+      puts "URL: #{url}"
+      datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
+      $backup_file = File.join(Rails.root, "db", "production_#{datestamp}.dump")   
+      puts "Downloading into db/#{File.basename($backup_file)}"
+      `curl -o #{$backup_file} "#{url}"`
+    }
   end
 
   desc "Backup remote and download the file and restore."
