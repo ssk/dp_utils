@@ -71,3 +71,9 @@ namespace :dp do
   end
 
 end
+
+task 'sa:backup' => 'dp:db:backup'
+task 'sa:backup_script' => 'dp:db:backup_script'
+task 'sa:restore' => 'dp:db:restore'
+task 'sa:restore_script' => 'dp:db:restore_script'
+
