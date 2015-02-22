@@ -5,23 +5,21 @@ namespace :dp do
     desc "Back up DB at db directory"
     task :backup => [:environment] do
       datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
-      backup_file = File.join(Rails.root, "db", "#{Rails.env}_#{datestamp}.sql")    
+      backup_file = File.join(Rails.root, "db", "#{Rails.env}_#{datestamp}.sql.gz")    
       db_config = ActiveRecord::Base.configurations[Rails.env]   
-      sh "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config[
-  'password']}#{db_config['password'].to_s} -h #{db_config['host']} --ignore-table=#{db_config['database']}.sessions #{db_config['database']} > #{backup_file}"     
-      puts "#{Rails.env}_#{datestamp}.sql was created."
+      sh "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"     
+      puts "#{Rails.env}_#{datestamp}.sql.gz was created."
     end
     
     task :backup_script do
       require 'yaml'
       env = ENV['Rails.env'].blank? ? 'development' : ENV['Rails.env']
       datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
-      backup_file = File.join(Rails.root, "db", "#{env}_#{datestamp}.sql")    
+      backup_file = File.join(Rails.root, "db", "#{env}_#{datestamp}.sql.gz")    
       db_config = YAML.load(File.read("config/database.yml"))[env]
       puts "-" * 80
       puts ""
-      puts "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config[
-  'password']}#{db_config['password'].to_s} -h #{db_config['host']} --ignore-table=#{db_config['database']}.sessions #{db_config['database']} > #{backup_file}"     
+      puts "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"     
       puts ""
       puts "-" * 80
     end
@@ -33,8 +31,11 @@ namespace :dp do
         exit
       end
       db_config = ActiveRecord::Base.configurations[Rails.env]   
-      sh "mysql -u #{db_config['username'].to_s} #{'-p' if db_config[
-  'password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8 < #{File.join(Rails.root, ENV["path"])}"
+      if ENV["path"] =~ /sql.gz/
+        sh "gunzip < #{File.join(Rails.root, ENV["path"])} | mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8"
+      else
+        sh "mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8 < #{File.join(Rails.root, ENV["path"])}"
+      end
     end
     
     task :restore_script do
@@ -47,8 +48,11 @@ namespace :dp do
       db_config = YAML.load(File.read("config/database.yml"))[env]
       puts "-" * 80
       puts ""
-      puts "mysql -u #{db_config['username'].to_s} #{'-p' if db_config[
-  'password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8 < #{File.join(Rails.root, ENV["path"])}"
+      if ENV["path"] =~ /sql.gz/
+        puts "gunzip < #{File.join(Rails.root, ENV["path"])} | mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8"
+      else
+        puts "mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8 < #{File.join(Rails.root, ENV["path"])}"
+      end
       puts ""
       puts "-" * 80
     end
