@@ -6,7 +6,7 @@ namespace :dp do
     task :backup => [:environment] do
       datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
       backup_file = File.join(Rails.root, "db", "#{Rails.env}_#{datestamp}.sql.gz")    
-      db_config = ActiveRecord::Base.configurations[Rails.env]   
+      db_config = ActiveRecord::Base.configurations[Rails.env].with_indifferent_access
       sh "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"     
       puts "#{Rails.env}_#{datestamp}.sql.gz was created."
     end
@@ -16,7 +16,7 @@ namespace :dp do
       env = ENV['Rails.env'].blank? ? 'development' : ENV['Rails.env']
       datestamp = Time.now.strftime("%Y%m%d%H%M%S")    
       backup_file = File.join(Rails.root, "db", "#{env}_#{datestamp}.sql.gz")    
-      db_config = YAML.load(File.read("config/database.yml"))[env]
+      db_config = YAML.load(File.read("config/database.yml"))[env].with_indifferent_access
       puts "-" * 80
       puts ""
       puts "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"     
@@ -30,7 +30,7 @@ namespace :dp do
         puts "Provide path= option"
         exit
       end
-      db_config = ActiveRecord::Base.configurations[Rails.env]   
+      db_config = ActiveRecord::Base.configurations[Rails.env].with_indifferent_access
       if ENV["path"] =~ /sql.gz/
         sh "gunzip < #{File.join(Rails.root, ENV["path"])} | mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8"
       else
@@ -45,7 +45,7 @@ namespace :dp do
       end
       require 'yaml'
       env = ENV['Rails.env'].blank? ? 'development' : ENV['Rails.env']
-      db_config = YAML.load(File.read("config/database.yml"))[env]
+      db_config = YAML.load(File.read("config/database.yml"))[env].with_indifferent_access
       puts "-" * 80
       puts ""
       if ENV["path"] =~ /sql.gz/
