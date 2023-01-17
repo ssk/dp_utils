@@ -1,83 +1,75 @@
 namespace :dp do
+  task :setup => :environment do
+    @db_config = YAML.load(File.read("config/database.yml")).with_indifferent_access[Rails.env]
 
-  namespace :db do
-
-    desc "Back up DB at db directory"
-    task :backup => [:environment] do
-      datestamp = Time.now.strftime("%Y%m%d%H%M%S")
-      backup_file = File.join(Rails.root, "backup", "#{Rails.env}_#{datestamp}.sql.gz")
-      db_config = ActiveRecord::Base.configurations[Rails.env].with_indifferent_access rescue ActiveRecord::Base.connection_db_config.configuration_hash.with_indifferent_access
-      sh "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --single-transaction --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"
-      puts "#{Rails.env}_#{datestamp}.sql.gz was created."
+    def backup_path
+      if ENV['tables'].present?
+        Rails.root.join("backup/#{Rails.env}_tables_#{Time.current.strftime("%Y%m%d%H%M%S")}.sql.gz")
+      else
+        Rails.root.join("backup/#{Rails.env}_#{Time.current.strftime("%Y%m%d%H%M%S")}.sql.gz")
+      end
     end
 
-    task :backup_script do
-      require 'yaml'
-      env = ENV['Rails.env'].blank? ? 'development' : ENV['Rails.env']
-      datestamp = Time.now.strftime("%Y%m%d%H%M%S")
-      backup_file = File.join(Rails.root, "backup", "#{env}_#{datestamp}.sql.gz")
-      db_config = YAML.load(File.read("config/database.yml"))[env].with_indifferent_access
-      puts "-" * 80
-      puts ""
-      puts "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --single-transaction --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"
-      puts ""
-      puts "-" * 80
+    def backup_script
+      <<-TXT.lines.map(&:strip).reject(&:blank?).join(" ")
+        mysqldump -u #{@db_config[:username]}
+        #{@db_config[:password].present? ? "-p#{@db_config[:password]}" : "-p" }
+        #{"-h #{@db_config[:host]}" if @db_config[:host]}
+        --single-transaction
+        #{@db_config[:tables_to_skip_backup].map { |t| "--ignore-table=#{@db_config[:database]}.#{t}" }.join(" ")}
+        --ignore-table=#{@db_config[:database]}.sessions
+        #{@db_config[:database]}
+        #{ENV['tables'].to_s.split(",").join(" ")}
+        | gzip -c > #{backup_path}
+      TXT
     end
 
-    desc "Restore DB from the path given"
-    task :restore => [:environment] do
+    def restore_script
       if ENV["path"].blank?
         puts "Provide path= option"
         exit
       end
-      db_config = ActiveRecord::Base.configurations[Rails.env].with_indifferent_access rescue ActiveRecord::Base.connection_db_config.configuration_hash.with_indifferent_access
-      if ENV["path"] =~ /sql.gz/
-        sh "gunzip < #{File.join(Rails.root, ENV["path"])} | mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8"
+      script = <<-TXT.lines.map(&:strip).reject(&:blank?).join(" ")
+        mysql -u #{@db_config[:username]}
+        #{@db_config[:password].present? ? "-p#{@db_config[:password]}" : "-p" }
+        #{"-h #{@db_config[:host]}" if @db_config[:host]}
+        --default-character-set=utf8
+        #{@db_config[:database]}
+      TXT
+      if ENV['path'] =~ /sql.gz/
+        script = "gunzip < #{ENV['path']} | " + script
       else
-        sh "mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8 < #{File.join(Rails.root, ENV["path"])}"
+        script = script + " < #{ENV["path"]}"
       end
     end
-
-    task :restore_script do
-      if ENV["path"].blank?
-        puts "Provide path= option"
-        exit
-      end
-      require 'yaml'
-      env = ENV['Rails.env'].blank? ? 'development' : ENV['Rails.env']
-      db_config = YAML.load(File.read("config/database.yml"))[env].with_indifferent_access
-      puts "-" * 80
-      puts ""
-      if ENV["path"] =~ /sql.gz/
-        puts "gunzip < #{File.join(Rails.root, ENV["path"])} | mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8"
-      else
-        puts "mysql -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} #{db_config['database']} --default-character-set=utf8 < #{File.join(Rails.root, ENV["path"])}"
-      end
-      puts ""
-      puts "-" * 80
-    end
-
-    namespace :sessions do
-      desc "Clear sessions table fast"
-      task :clear => :environment do
-        sqls = <<-END
-          create table sessions_temp like sessions
-          drop table sessions
-          rename table sessions_temp to sessions
-        END
-        sqls.each_line do |line|
-          puts line.strip
-          ActiveRecord::Base.connection.execute(line.strip)
-        end
-      end
-    end
-
   end
 
+  desc "Backup DB. Provide tables"
+  task :backup => :setup do
+    `#{backup_script}`
+  end
+
+  desc "Displays Backup Script"
+  task :backup_script => :setup do
+    puts "-" * 80
+    puts backup_script
+    puts "-" * 80
+  end
+
+  task :restore => :setup do
+    `#{restore_script}`
+  end
+
+  task :restore_script => :setup do
+    puts "-" * 80
+    puts restore_script
+    puts "-" * 80
+  end
 end
 
-task 'sa:backup' => 'dp:db:backup'
-task 'sa:backup_script' => 'dp:db:backup_script'
-task 'sa:restore' => 'dp:db:restore'
-task 'sa:restore_script' => 'dp:db:restore_script'
+# Aliases
+task 'sa:backup'         => 'dp:backup'
+task 'sa:backup_script'  => 'dp:backup_script'
+task 'sa:restore'        => 'dp:restore'
+task 'sa:restore_script' => 'dp:restore_script'
 
