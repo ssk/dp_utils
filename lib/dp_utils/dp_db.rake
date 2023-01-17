@@ -5,7 +5,7 @@ namespace :dp do
     desc "Back up DB at db directory"
     task :backup => [:environment] do
       datestamp = Time.now.strftime("%Y%m%d%H%M%S")
-      backup_file = File.join(Rails.root, "db", "#{Rails.env}_#{datestamp}.sql.gz")
+      backup_file = File.join(Rails.root, "backup", "#{Rails.env}_#{datestamp}.sql.gz")
       db_config = ActiveRecord::Base.configurations[Rails.env].with_indifferent_access rescue ActiveRecord::Base.connection_db_config.configuration_hash.with_indifferent_acce
       ss
       sh "mysqldump -u #{db_config['username'].to_s} #{'-p' if db_config['password']}#{db_config['password'].to_s} -h #{db_config['host']} --single-transaction --ignore-table=#{db_config['database']}.sessions #{db_config['database']} | gzip -c > #{backup_file}"
@@ -16,7 +16,7 @@ namespace :dp do
       require 'yaml'
       env = ENV['Rails.env'].blank? ? 'development' : ENV['Rails.env']
       datestamp = Time.now.strftime("%Y%m%d%H%M%S")
-      backup_file = File.join(Rails.root, "db", "#{env}_#{datestamp}.sql.gz")
+      backup_file = File.join(Rails.root, "backup", "#{env}_#{datestamp}.sql.gz")
       db_config = YAML.load(File.read("config/database.yml"))[env].with_indifferent_access
       puts "-" * 80
       puts ""
