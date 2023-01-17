@@ -3,11 +3,12 @@ namespace :dp do
     @db_config = YAML.load(File.read("config/database.yml")).with_indifferent_access[Rails.env]
 
     def backup_path
-      if ENV['tables'].present?
-        Rails.root.join("backup/#{Rails.env}_tables_#{Time.current.strftime("%Y%m%d%H%M%S")}.sql.gz")
-      else
-        Rails.root.join("backup/#{Rails.env}_#{Time.current.strftime("%Y%m%d%H%M%S")}.sql.gz")
-      end
+      @backup_path =
+        if ENV['tables'].present?
+          Rails.root.join("backup/#{Rails.env}_tables_#{Time.current.strftime("%Y%m%d%H%M%S")}.sql.gz")
+        else
+          Rails.root.join("backup/#{Rails.env}_#{Time.current.strftime("%Y%m%d%H%M%S")}.sql.gz")
+        end
     end
 
     def backup_script
@@ -47,6 +48,9 @@ namespace :dp do
   desc "Backup DB. Provide tables"
   task :backup => :setup do
     `#{backup_script}`
+    puts "-" * 80
+    puts @backup_path
+    puts "-" * 80
   end
 
   desc "Displays Backup Script"
